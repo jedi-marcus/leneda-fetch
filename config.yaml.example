@@ -1,0 +1,19 @@
+---
+PODs:
+- name: LUKE
+  id: LU0000010133700000000000081434123
+  threshold: 7
+- name: LEIA
+  id: LU0000010133800000000000070584715
+  threshold: 12
+  
+url: "https://api.leneda.eu/api/metering-points/%s/time-series"
+headers:
+  accept: "*/*"
+  x-energy-id: "LUXE-DO-RE-MIF11"
+  x-api-key: "92084e51-09bd-425d-8ab3-473635c67a05"
+
+threshold_price:
+  3: 11.11
+  7: 19.27
+  12: 29.46
