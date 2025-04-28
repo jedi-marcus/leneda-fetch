@@ -3,11 +3,14 @@ import requests
 import yaml
 import curses
 import os
+import sys
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import calendar
 import pyfiglet
 import json
+import pytz
+from pprint import pprint
 
 def load_config():
     """Load configuration from config.yaml in the script directory."""
@@ -55,7 +58,9 @@ def select_pod(stdscr, pods):
 
 def get_month_year():
     """Get list of last 12 months in format 'Month Year'."""
-    current_date = datetime.now()
+    # Use Luxembourg timezone
+    lux_tz = pytz.timezone('Europe/Luxembourg')
+    current_date = datetime.now(lux_tz)
     months = []
 
     for i in range(12):
@@ -104,11 +109,26 @@ def get_data(pod, month, config, save_raw=False):
     """Fetch data for a specific POD and month."""
     base_url = config.get('url', '')
     headers = config.get('headers', {})
+    
+    # Use Luxembourg timezone
     date_object = datetime.strptime(month, "%B %Y")
+    # Set timezone to Europe/Luxembourg
+    lux_tz = pytz.timezone('Europe/Luxembourg')
+    date_object = lux_tz.localize(date_object)
 
-    # get first and last day of month in format 2025-03-01T00:00:00Z
-    first_day = date_object.strftime("%Y-%m-%dT%H:%M:%SZ")
-    last_day = (date_object + relativedelta(months=1) - timedelta(seconds=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    # get first and last day of month in format 2025-03-01T00:00:00Z but according to luxembourg timezone
+    # Get first day of month at midnight in Luxembourg time
+    first_day = date_object.replace(day=1, hour=0, minute=0, second=0)
+    
+    # Get last day of month at 23:59:59 in Luxembourg time
+    last_day = (first_day + relativedelta(months=1) - timedelta(seconds=1))
+    
+    # Convert to UTC while preserving the local time
+    first_day = first_day.astimezone(pytz.UTC)
+    last_day = last_day.astimezone(pytz.UTC)
+
+    first_day = first_day.strftime("%Y-%m-%dT%H:%M:%SZ")
+    last_day = last_day.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     url = base_url % (pod['id'])
 
@@ -123,7 +143,7 @@ def get_data(pod, month, config, save_raw=False):
 
     if save_raw:
         # Save raw JSON to file
-        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        timestamp = datetime.now(lux_tz).strftime("%Y%m%d-%H%M%S")
         filename = f"{date_object.year}-{date_object.month:02d}-{timestamp}.json"
         with open(filename, 'w') as f:
             json.dump(response_data, f, indent=2)

@@ -13,6 +13,7 @@ import calendar
 import pyfiglet
 import json
 import os
+import pytz
 
 # Get the directory where the script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -34,6 +35,12 @@ def processData(items, threshold, month):
 
     for item in items:
         total += (item['value']/4)
+
+        # Convert UTC timestamp to Luxembourg time
+        utc_time = datetime.strptime(item['startedAt'], "%Y-%m-%dT%H:%M:%SZ")
+        utc_time = utc_time.replace(tzinfo=pytz.UTC)
+        lux_time = utc_time.astimezone(pytz.timezone('Europe/Luxembourg'))
+        item['startedAt'] = lux_time.strftime("%Y-%m-%dT%H:%M:%S")
         date = item['startedAt'].split('T')[0]
 
         if not daily.get(date):
@@ -50,9 +57,9 @@ def processData(items, threshold, month):
 
     for day in daily:
         if daily_over.get(day):
-            print(f"{count[day]:d} {day} - {daily[day]:.2f}  +{daily_over[day]:.2f}")
+            print(f"{count[day]:>3d} {day} - {daily[day]:>6.3f}  +{daily_over[day]:.3f}")
         else:
-            print(f"{count[day]:d} {day} - {daily[day]:.2f}")
+            print(f"{count[day]:>3d} {day} - {daily[day]:>6.3f}")
 
     total = 0
     total_over = 0
